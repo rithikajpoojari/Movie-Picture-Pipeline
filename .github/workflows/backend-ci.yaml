@@ -1,0 +1,77 @@
+name: Backend Continuous Integration
+
+on:
+  pull_request:
+    branches: [main]
+    paths: ['starter/backend/**']
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: starter/backend
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: Install pipenv
+        run: pip install pipenv
+      - name: Restore virtualenv cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/virtualenvs
+          key: ${{ runner.os }}-pipenv-${{ hashFiles('starter/backend/Pipfile.lock') }}
+      - name: Install dependencies
+        run: pipenv install --dev
+      - name: Run lint
+        run: pipenv run lint
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: Install pipenv
+        run: pip install pipenv
+      - name: Restore virtualenv cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/virtualenvs
+          key: ${{ runner.os }}-pipenv-${{ hashFiles('starter/backend/Pipfile.lock') }}
+      - name: Install dependencies
+        run: pipenv install --dev
+      - name: Run tests
+        run: pipenv run test
+
+  build:
+    needs: [lint, test]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Build Docker image
+        run: docker build --tag mp-backend:${{ github.sha }} .
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '✅ Backend CI passed (lint, test, docker build) for ' + context.sha.slice(0, 7)
+            })
