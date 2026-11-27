@@ -1,16 +1,16 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 
 function MovieDetail({ movie }) {
   const [details, setDetails] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (!movie?.id) return;
 
     setLoading(true);
-    setError("");
+    setError('');
     setDetails(null);
 
     axios
@@ -19,7 +19,7 @@ function MovieDetail({ movie }) {
         setDetails(response.data);
       })
       .catch(() => {
-        setError("Unable to load movie details.");
+        setError('Unable to load movie details.');
       })
       .finally(() => {
         setLoading(false);
